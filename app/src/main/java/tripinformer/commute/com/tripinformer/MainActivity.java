@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
         mTextMessage = (TextView) findViewById(R.id.message);
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-
+        
         Chronometer ch = (Chronometer) findViewById(R.id.chronometer3);
         ch.setCountDown(true);
         ch.setBase(SystemClock.elapsedRealtime() + 35*60*1000);
