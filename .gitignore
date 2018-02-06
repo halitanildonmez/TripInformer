@@ -11,3 +11,5 @@
 /.idea
 *.bat
 .apidetails.txt
+
+AppConstants.java
