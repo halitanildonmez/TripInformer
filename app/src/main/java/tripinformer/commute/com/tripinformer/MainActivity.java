@@ -14,8 +14,9 @@ import android.widget.Chronometer;
 import android.widget.TextView;
 
 
-import View.DownloadCallback;
-import View.NetworkFragment;
+import Server.DownloadCallback;
+import Server.DownloadTask;
+import Server.NetworkFragment;
 
 public class MainActivity extends FragmentActivity implements DownloadCallback {
 
@@ -49,6 +50,7 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         setContentView(R.layout.activity_main);
 
         mNetworkFragment = NetworkFragment.getInstance(getFragmentManager(), "https://google.com");
+        mNetworkFragment.setMCallback(this);
         startDownload();
 
         mTextMessage = (TextView) findViewById(R.id.message);
@@ -71,12 +73,16 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     @Override
     public void updateFromDownload(Object result) {
         // Should updated UI
+
+        Log.d("MY APP", "RESULT" + result.toString());
     }
 
     @Override
     public NetworkInfo getActiveNetworkInfo() {
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        return connManager.getActiveNetworkInfo();
+        NetworkInfo networkInfo = connManager.getActiveNetworkInfo();
+        return networkInfo;
+
     }
 
     @Override

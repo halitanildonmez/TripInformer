@@ -1,4 +1,4 @@
-package View;
+package Server;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -12,8 +12,7 @@ import android.support.annotation.Nullable;
 
 public class NetworkFragment extends Fragment {
     public static final String TAG = "NetworkFragment";
-    public static final String URL_KEY = "https://google.com";
-
+    private static final String URL_KEY = "https://google.com";
     private DownloadCallback mCallback;
     private DownloadTask mDownloadTask;
     private String mUrlString;
@@ -29,6 +28,10 @@ public class NetworkFragment extends Fragment {
         networkFragment.setArguments(args);
         fragmentManager.beginTransaction().add(networkFragment, TAG).commit();
         return networkFragment;
+    }
+
+    public void setMCallback (DownloadCallback callback) {
+        mCallback = callback;
     }
 
     @Override
