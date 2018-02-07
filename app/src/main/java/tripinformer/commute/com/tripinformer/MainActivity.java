@@ -99,7 +99,6 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
                     metros = new ArrayList<>(metroJson.length());
                     for (int i = 0; i < metroJson.length(); i++) {
                         JSONObject o = (JSONObject) metroJson.get(i);
-                        String dateTime = o.getString(SLDataFieldNames.EXPECTED_DATE_TIME);
                         SLData data = new SLData(o.getString (SLDataFieldNames.DISPLAY_TIME),
                                 o.getString (SLDataFieldNames.DESTINATION), null);
                         metros.add(data);
