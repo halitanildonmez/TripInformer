@@ -14,6 +14,21 @@ import android.widget.Chronometer;
 import android.widget.TextView;
 
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import Model.SLData;
+import Model.SLDataFieldNames;
 import Server.DownloadCallback;
 import Server.DownloadTask;
 import Server.NetworkFragment;
@@ -23,6 +38,8 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     private TextView mTextMessage;
     private boolean mDownloading = false;
     private NetworkFragment mNetworkFragment;
+
+    private List<SLData> metros;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -49,11 +66,11 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mNetworkFragment = NetworkFragment.getInstance(getFragmentManager(), "https://google.com");
+        mNetworkFragment = NetworkFragment.getInstance(getFragmentManager(), AppConstants.CONNECTION_URL);
         mNetworkFragment.setMCallback(this);
         startDownload();
 
-        mTextMessage = (TextView) findViewById(R.id.message);
+        mTextMessage = (TextView) findViewById(R.id.editText);
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
@@ -73,8 +90,26 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     @Override
     public void updateFromDownload(Object result) {
         // Should updated UI
-
-        Log.d("MY APP", "RESULT" + result.toString());
+        try {
+            JSONObject jsonObject = new JSONObject((String)result);
+            if (jsonObject.getInt("StatusCode") == 0) {
+                JSONObject responseData = jsonObject.getJSONObject("ResponseData");
+                JSONArray metroJson = responseData.getJSONArray("Metros");
+                if (metroJson != null) {
+                    metros = new ArrayList<>(metroJson.length());
+                    for (int i = 0; i < metroJson.length(); i++) {
+                        JSONObject o = (JSONObject) metroJson.get(i);
+                        String dateTime = o.getString(SLDataFieldNames.EXPECTED_DATE_TIME);
+                        SLData data = new SLData(o.getString (SLDataFieldNames.DISPLAY_TIME),
+                                o.getString (SLDataFieldNames.DESTINATION), null);
+                        metros.add(data);
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        mTextMessage.setText(metros.get(0).getDisplayData());
     }
 
     @Override
@@ -82,7 +117,6 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connManager.getActiveNetworkInfo();
         return networkInfo;
-
     }
 
     @Override

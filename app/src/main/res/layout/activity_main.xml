@@ -29,4 +29,14 @@
         app:layout_constraintStart_toStartOf="parent"
         tools:layout_editor_absoluteY="231dp" />
 
+    <EditText
+        android:id="@+id/editText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="SOME VALUE"
+        tools:layout_editor_absoluteX="76dp"
+        tools:layout_editor_absoluteY="343dp" />
+
 </android.support.constraint.ConstraintLayout>

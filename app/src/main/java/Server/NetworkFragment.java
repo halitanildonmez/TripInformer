@@ -6,13 +6,15 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 
+import tripinformer.commute.com.tripinformer.AppConstants;
+
 /**
  * Created by anildonmez on 29.1.2018.
  */
 
 public class NetworkFragment extends Fragment {
     public static final String TAG = "NetworkFragment";
-    private static final String URL_KEY = "https://google.com";
+    private static final String URL_KEY = "url_key";
     private DownloadCallback mCallback;
     private DownloadTask mDownloadTask;
     private String mUrlString;
@@ -67,7 +69,7 @@ public class NetworkFragment extends Fragment {
     public void startDownload() {
         cancelDownload();
         mDownloadTask = new DownloadTask(mCallback);
-        mDownloadTask.execute(mUrlString);
+        mDownloadTask.execute(getArguments().getString(URL_KEY));
     }
 
     /**

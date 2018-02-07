@@ -23,7 +23,6 @@ import tripinformer.commute.com.tripinformer.AppConstants;
 public class DownloadTask extends android.os.AsyncTask <String, Integer, DownloadTask.Result> {
 
     private DownloadCallback<String> mCallback;
-    private static final String URL_ADDRESS = "";
 
     DownloadTask(DownloadCallback<String> callback) {
         setCallback(callback);
@@ -71,7 +70,7 @@ public class DownloadTask extends android.os.AsyncTask <String, Integer, Downloa
         if (!isCancelled() && urls != null && urls.length > 0) {
             String urlString = urls[0];
             try {
-                URL url = new URL(AppConstants.CONNECTION_URL);
+                URL url = new URL(urlString);
                 String resultString = downloadUrl(url);
                 if (resultString != null) {
                     result = new Result(resultString);
@@ -113,15 +112,6 @@ public class DownloadTask extends android.os.AsyncTask <String, Integer, Downloa
             if (stream != null) {
                 // Converts Stream to String with max length of 10000.
                 result = readStream(stream, 10000);
-                JSONObject jsonObject = new JSONObject(result);
-                if (jsonObject.getInt("StatusCode") == 0) {
-                    Log.d("MY APP", "JSON IS DONE BITCHES");
-                    JSONObject responseData = jsonObject.getJSONObject("ResponseData");
-                    JSONArray metros = responseData.getJSONArray("Metros");
-                    if (metros != null) {
-                        Log.d("MY APP ", "NOT NULL");
-                    }
-                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -153,7 +143,6 @@ public class DownloadTask extends android.os.AsyncTask <String, Integer, Downloa
             buffer.append(rawBuffer, 0, readSize);
             maxReadSize -= readSize;
         }
-        Log.d("MyApp", "JSON PARSE " + buffer.toString());
         return buffer.toString();
     }
 
