@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -38,6 +39,8 @@ import Server.NetworkFragment;
 public class MainActivity extends FragmentActivity implements DownloadCallback {
 
     private TextView minLeftTextView;
+
+    private int minsLeft = -1;
 
     private TextView mTextMessage;
     private boolean mDownloading = false;
@@ -105,17 +108,19 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
                     metros = new ArrayList<>(metroJson.length());
                     for (int i = 0; i < metroJson.length(); i++) {
                         JSONObject o = (JSONObject) metroJson.get(i);
-                        String dateObject = o.getString (SLDataFieldNames.EXPECTED_DATE_TIME);
-                        // add Z so that we can parse the string. Otherwise an exception will be thrown
-                        // TODO: make this better somehow. Should check if the string is already in the
-                        // TODO: good form
-                        dateObject += "Z";
-                        LocalDateTime localDateTime =
-                                LocalDateTime.ofInstant(Instant.parse(dateObject), ZoneId.systemDefault());
+                        if (o.getString(SLDataFieldNames.DESTINATION).equalsIgnoreCase("Kungsträdgården")) {
+                            String dateObject = o.getString (SLDataFieldNames.EXPECTED_DATE_TIME);
+                            // add Z so that we can parse the string. Otherwise an exception will be thrown
+                            // TODO: make this better somehow. Should check if the string is already in the
+                            // TODO: good form
+                            dateObject += "Z";
+                            LocalDateTime localDateTime =
+                                    LocalDateTime.ofInstant(Instant.parse(dateObject), ZoneId.systemDefault());
 
-                        SLData data = new SLData(o.getString (SLDataFieldNames.DISPLAY_TIME),
-                                o.getString (SLDataFieldNames.DESTINATION), localDateTime);
-                        metros.add(data);
+                            SLData data = new SLData(o.getString (SLDataFieldNames.DISPLAY_TIME),
+                                    o.getString (SLDataFieldNames.DESTINATION), localDateTime);
+                            metros.add(data);
+                        }
                     }
                 }
             }
@@ -124,8 +129,23 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         }
         LocalDateTime timeTabledDateTime = metros.get(0).getTimeTabledDateTime();
         LocalDateTime curDate = LocalDateTime.now();
-        int minLeft = timeTabledDateTime.getMinute() - curDate.getMinute();
-        minLeftTextView.setText("" + minLeft);
+        minsLeft = timeTabledDateTime.getMinute() - curDate.getMinute();
+        minLeftTextView.setText("" + minsLeft);
+
+        new CountDownTimer(minsLeft*60*1000, 1000) {
+
+            @Override
+            public void onTick(long l) {
+                String cs = "" + l / (60*1000);
+                Log.d ("MY APP", cs);
+                minLeftTextView.setText(cs);
+            }
+
+            @Override
+            public void onFinish() {
+
+            }
+        }.start();
     }
 
     @Override
