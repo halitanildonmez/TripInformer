@@ -22,7 +22,9 @@ import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -34,6 +36,8 @@ import Server.DownloadTask;
 import Server.NetworkFragment;
 
 public class MainActivity extends FragmentActivity implements DownloadCallback {
+
+    private TextView minLeftTextView;
 
     private TextView mTextMessage;
     private boolean mDownloading = false;
@@ -70,14 +74,16 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         mNetworkFragment.setMCallback(this);
         startDownload();
 
-        mTextMessage = (TextView) findViewById(R.id.editText);
+        minLeftTextView = (TextView) findViewById(R.id.minLeftText);
+
+        /*mTextMessage = (TextView) findViewById(R.id.editText);
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
         Chronometer ch = (Chronometer) findViewById(R.id.chronometer3);
         ch.setCountDown(true);
         ch.setBase(SystemClock.elapsedRealtime() + 35*60*1000);
-        ch.start();
+        ch.start();*/
     }
 
     private void startDownload () {
@@ -99,8 +105,16 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
                     metros = new ArrayList<>(metroJson.length());
                     for (int i = 0; i < metroJson.length(); i++) {
                         JSONObject o = (JSONObject) metroJson.get(i);
+                        String dateObject = o.getString (SLDataFieldNames.EXPECTED_DATE_TIME);
+                        // add Z so that we can parse the string. Otherwise an exception will be thrown
+                        // TODO: make this better somehow. Should check if the string is already in the
+                        // TODO: good form
+                        dateObject += "Z";
+                        LocalDateTime localDateTime =
+                                LocalDateTime.ofInstant(Instant.parse(dateObject), ZoneId.systemDefault());
+
                         SLData data = new SLData(o.getString (SLDataFieldNames.DISPLAY_TIME),
-                                o.getString (SLDataFieldNames.DESTINATION), null);
+                                o.getString (SLDataFieldNames.DESTINATION), localDateTime);
                         metros.add(data);
                     }
                 }
@@ -108,7 +122,10 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        mTextMessage.setText(metros.get(0).getDisplayData());
+        LocalDateTime timeTabledDateTime = metros.get(0).getTimeTabledDateTime();
+        LocalDateTime curDate = LocalDateTime.now();
+        int minLeft = timeTabledDateTime.getMinute() - curDate.getMinute();
+        minLeftTextView.setText("" + minLeft);
     }
 
     @Override
@@ -122,10 +139,10 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     public void onProgressUpdate(int progressCode, int percentComplete) {
         switch (progressCode) {
             case Progress.ERROR:
-                Log.e("MyApp", "NOT CONNECFTED");
+                Log.e("MyApp", "NOT CONNECTED");
                 break;
             case Progress.CONNECT_SUCCESS:
-                Log.d("MyApp","Connnected");
+                Log.d("MyApp","Connected");
                 break;
             case Progress.GET_INPUT_STREAM_SUCCESS:
                 break;
@@ -139,6 +156,5 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     @Override
     public void finishDownloading() {
         mDownloading = false;
-
     }
 }
