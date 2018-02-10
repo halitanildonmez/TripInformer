@@ -5,13 +5,12 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.MenuItem;
-import android.widget.Chronometer;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 
@@ -19,21 +18,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import Model.SLData;
 import Model.SLDataFieldNames;
 import Server.DownloadCallback;
-import Server.DownloadTask;
 import Server.NetworkFragment;
 
 public class MainActivity extends FragmentActivity implements DownloadCallback {
@@ -45,6 +38,8 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     private TextView mTextMessage;
     private boolean mDownloading = false;
     private NetworkFragment mNetworkFragment;
+
+    private CountDownTimer timer;
 
     private List<SLData> metros;
 
@@ -73,22 +68,29 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mNetworkFragment = NetworkFragment.getInstance(getFragmentManager(), AppConstants.CONNECTION_URL);
+        String firstPart = getString(R.string.call_first_part);
+
+        // default site is Kungstradgarden
+        firstPart += "&siteid=9323&timewindow=40&bus=false&ship=false&tram=false";
+
+        mNetworkFragment = NetworkFragment.getInstance(getFragmentManager(), firstPart);
         mNetworkFragment.setMCallback(this);
+
+        SpinnerEventListener spinnerEventListener = new SpinnerEventListener(9340, mNetworkFragment);
+
         startDownload();
 
         minLeftTextView = findViewById(R.id.minLeftText);
         arrivalTimeTextView = findViewById(R.id.arrivalTimeText);
         toStationTextView = findViewById(R.id.toStationText);
 
-        /*mTextMessage = (TextView) findViewById(R.id.editText);
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        Spinner stationNameSpinner = findViewById(R.id.stationSelectionSpinner);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.station_name_array, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-        Chronometer ch = (Chronometer) findViewById(R.id.chronometer3);
-        ch.setCountDown(true);
-        ch.setBase(SystemClock.elapsedRealtime() + 35*60*1000);
-        ch.start();*/
+        stationNameSpinner.setAdapter(adapter);
+        stationNameSpinner.setOnItemSelectedListener(spinnerEventListener);
     }
 
     private void startDownload () {
@@ -100,12 +102,16 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
 
     @Override
     public void updateFromDownload(Object result) {
+        //TODO: ugly, must fix
+        if (result != null && result.toString().equals("C")) {
+            clearAll();
+        }
         // Should updated UI
         try {
             JSONObject jsonObject = new JSONObject((String)result);
             if (jsonObject.getInt("StatusCode") == 0) {
                 JSONObject responseData = jsonObject.getJSONObject("ResponseData");
-                metros = createSLDataFromJsonObject(responseData, "Kungsträdgården");
+                metros = createSLDataFromJsonObject(responseData);
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -119,18 +125,16 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     /**
      * creates a @{@link SLData} from the given @{@link JSONObject}  and the station name
      * @param jsonObject the object to convert
-     * @param stationName the station name. We only parse the data that has this atation name
-     *                    when we get a response
      * @return The parsed data
      */
-    private List<SLData> createSLDataFromJsonObject (JSONObject jsonObject, String stationName)
+    private List<SLData> createSLDataFromJsonObject (JSONObject jsonObject)
             throws JSONException {
         List<SLData> objects = new ArrayList<>();
         JSONArray metroJson = jsonObject.getJSONArray("Metros");
         if (metroJson != null) {
             for (int i = 0; i < metroJson.length(); i++) {
                 JSONObject o = (JSONObject) metroJson.get(i);
-                if (o.getString(SLDataFieldNames.DESTINATION).equalsIgnoreCase(stationName)) {
+                if (o.getInt("JourneyDirection") == 2) {
                     String dateObject = o.getString (SLDataFieldNames.EXPECTED_DATE_TIME);
                     // add Z so that we can parse the string. Otherwise an exception will be thrown
                     // TODO: make this better somehow. Should check if the string is already in the
@@ -160,14 +164,13 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
 
         minsLeft = timeTabledDateTime.getMinute() - curDate.getMinute();
         startCounter(minsLeft);
-        minLeftTextView.setText("" + minsLeft);
 
-        arrivalTimeTextView.setText(timeTabledDateTime.toString());
+        arrivalTimeTextView.setText(timeTabledDateTime.toLocalDate().toString() + " " + timeTabledDateTime.toLocalTime().toString());
         toStationTextView.setText(data.getDestination());
     }
 
     private void startCounter (int minsLeft) {
-        new CountDownTimer(minsLeft*60*1000, 1000) {
+        timer = new CountDownTimer(minsLeft*60*1000, 1000) {
 
             @Override public void onTick(long l) {
                 String cs = "" + l / (60*1000);
@@ -177,7 +180,9 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
             @Override public void onFinish() {
                 // TODO: restart the download
             }
-        }.start();
+        };
+
+        timer.start();
     }
 
     @Override
@@ -207,5 +212,13 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     @Override
     public void finishDownloading() {
         mDownloading = false;
+    }
+
+    public void clearAll () {
+        minLeftTextView.setText("");
+        arrivalTimeTextView.setText("");
+        toStationTextView.setText("");
+        metros.clear();
+        timer.cancel();
     }
 }

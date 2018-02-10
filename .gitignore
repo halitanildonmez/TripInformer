@@ -12,4 +12,5 @@
 *.bat
 .apidetails.txt
 
+app/src/main/res/values/secrets.xml
 AppConstants.java

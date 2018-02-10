@@ -6,8 +6,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 
-import tripinformer.commute.com.tripinformer.AppConstants;
-
 /**
  * Created by anildonmez on 29.1.2018.
  */
@@ -78,6 +76,7 @@ public class NetworkFragment extends Fragment {
     public void cancelDownload() {
         if (mDownloadTask != null) {
             mDownloadTask.cancel(true);
+            
         }
     }
 

@@ -9,12 +9,6 @@ import java.net.URL;
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.util.Log;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import tripinformer.commute.com.tripinformer.AppConstants;
 
 /**
  * Created by anildonmez on 29.1.2018.
@@ -166,5 +160,7 @@ public class DownloadTask extends android.os.AsyncTask <String, Integer, Downloa
      */
     @Override
     protected void onCancelled(Result result) {
+        // TODO: Ugly, fix it
+        mCallback.updateFromDownload("C");
     }
 }
