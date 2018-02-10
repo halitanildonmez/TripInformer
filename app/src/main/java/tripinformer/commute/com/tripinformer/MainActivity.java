@@ -38,7 +38,7 @@ import Server.NetworkFragment;
 
 public class MainActivity extends FragmentActivity implements DownloadCallback {
 
-    private TextView minLeftTextView;
+    private TextView minLeftTextView, arrivalTimeTextView, toStationTextView;
 
     private int minsLeft = -1;
 
@@ -77,7 +77,9 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         mNetworkFragment.setMCallback(this);
         startDownload();
 
-        minLeftTextView = (TextView) findViewById(R.id.minLeftText);
+        minLeftTextView = findViewById(R.id.minLeftText);
+        arrivalTimeTextView = findViewById(R.id.arrivalTimeText);
+        toStationTextView = findViewById(R.id.toStationText);
 
         /*mTextMessage = (TextView) findViewById(R.id.editText);
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
@@ -103,47 +105,77 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
             JSONObject jsonObject = new JSONObject((String)result);
             if (jsonObject.getInt("StatusCode") == 0) {
                 JSONObject responseData = jsonObject.getJSONObject("ResponseData");
-                JSONArray metroJson = responseData.getJSONArray("Metros");
-                if (metroJson != null) {
-                    metros = new ArrayList<>(metroJson.length());
-                    for (int i = 0; i < metroJson.length(); i++) {
-                        JSONObject o = (JSONObject) metroJson.get(i);
-                        if (o.getString(SLDataFieldNames.DESTINATION).equalsIgnoreCase("Kungsträdgården")) {
-                            String dateObject = o.getString (SLDataFieldNames.EXPECTED_DATE_TIME);
-                            // add Z so that we can parse the string. Otherwise an exception will be thrown
-                            // TODO: make this better somehow. Should check if the string is already in the
-                            // TODO: good form
-                            dateObject += "Z";
-                            LocalDateTime localDateTime =
-                                    LocalDateTime.ofInstant(Instant.parse(dateObject), ZoneId.systemDefault());
-
-                            SLData data = new SLData(o.getString (SLDataFieldNames.DISPLAY_TIME),
-                                    o.getString (SLDataFieldNames.DESTINATION), localDateTime);
-                            metros.add(data);
-                        }
-                    }
-                }
+                metros = createSLDataFromJsonObject(responseData, "Kungsträdgården");
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        LocalDateTime timeTabledDateTime = metros.get(0).getTimeTabledDateTime();
+
+        if (metros.size() > 0) {
+            updateActivityLabels(metros.get(0));
+        }
+    }
+
+    /**
+     * creates a @{@link SLData} from the given @{@link JSONObject}  and the station name
+     * @param jsonObject the object to convert
+     * @param stationName the station name. We only parse the data that has this atation name
+     *                    when we get a response
+     * @return The parsed data
+     */
+    private List<SLData> createSLDataFromJsonObject (JSONObject jsonObject, String stationName)
+            throws JSONException {
+        List<SLData> objects = new ArrayList<>();
+        JSONArray metroJson = jsonObject.getJSONArray("Metros");
+        if (metroJson != null) {
+            for (int i = 0; i < metroJson.length(); i++) {
+                JSONObject o = (JSONObject) metroJson.get(i);
+                if (o.getString(SLDataFieldNames.DESTINATION).equalsIgnoreCase(stationName)) {
+                    String dateObject = o.getString (SLDataFieldNames.EXPECTED_DATE_TIME);
+                    // add Z so that we can parse the string. Otherwise an exception will be thrown
+                    // TODO: make this better somehow. Should check if the string is already in the
+                    // TODO: good form
+                    dateObject += "Z";
+                    LocalDateTime localDateTime =
+                            LocalDateTime.ofInstant(Instant.parse(dateObject), ZoneId.systemDefault());
+
+                    SLData data = new SLData(o.getString (SLDataFieldNames.DISPLAY_TIME),
+                            o.getString (SLDataFieldNames.DESTINATION), localDateTime);
+                    objects.add(data);
+                }
+            }
+        }
+        return objects;
+    }
+
+    /**
+     * updates the labes in the view. So far we have {@link #minLeftTextView}, {@link #arrivalTimeTextView}
+     * {@link #toStationTextView} labels that are updated.
+     *
+     * @param data the data to use and update the labels with
+     */
+    private void updateActivityLabels (SLData data) {
+        LocalDateTime timeTabledDateTime = data.getTimeTabledDateTime();
         LocalDateTime curDate = LocalDateTime.now();
+
         minsLeft = timeTabledDateTime.getMinute() - curDate.getMinute();
+        startCounter(minsLeft);
         minLeftTextView.setText("" + minsLeft);
 
+        arrivalTimeTextView.setText(timeTabledDateTime.toString());
+        toStationTextView.setText(data.getDestination());
+    }
+
+    private void startCounter (int minsLeft) {
         new CountDownTimer(minsLeft*60*1000, 1000) {
 
-            @Override
-            public void onTick(long l) {
+            @Override public void onTick(long l) {
                 String cs = "" + l / (60*1000);
-                Log.d ("MY APP", cs);
                 minLeftTextView.setText(cs);
             }
 
-            @Override
-            public void onFinish() {
-
+            @Override public void onFinish() {
+                // TODO: restart the download
             }
         }.start();
     }
@@ -158,11 +190,10 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     @Override
     public void onProgressUpdate(int progressCode, int percentComplete) {
         switch (progressCode) {
+            // TODO: remove them maybe ? Or find a use. Would be useful when more interactions are added
             case Progress.ERROR:
-                Log.e("MyApp", "NOT CONNECTED");
                 break;
             case Progress.CONNECT_SUCCESS:
-                Log.d("MyApp","Connected");
                 break;
             case Progress.GET_INPUT_STREAM_SUCCESS:
                 break;
