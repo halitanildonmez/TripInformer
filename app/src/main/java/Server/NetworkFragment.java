@@ -76,7 +76,6 @@ public class NetworkFragment extends Fragment {
     public void cancelDownload() {
         if (mDownloadTask != null) {
             mDownloadTask.cancel(true);
-            
         }
     }
 

@@ -19,35 +19,30 @@ public class SpinnerEventListener implements AdapterView.OnItemSelectedListener 
     private AtomicBoolean isInitialized;
 
     private int siteId;
+    private int journeyDirection;
+
     private NetworkFragment mNetworkFragment;
 
     public SpinnerEventListener(int siteId, NetworkFragment mNetworkFragment) {
         this.siteId = siteId;
         this.mNetworkFragment = mNetworkFragment;
         isInitialized = new AtomicBoolean(false);
+        journeyDirection = 2;
+
     }
 
-    public int getSiteId() {
-        return siteId;
-    }
-
-    public void setSiteId(int siteId) {
-        this.siteId = siteId;
-    }
+    public int getJourneyDirection () { return journeyDirection; }
 
     @Override
     public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
         String itemAtPosition = (String) adapterView.getItemAtPosition(i);
-        if (itemAtPosition.indexOf("Kungs") != -1) {
-            siteId = 9340;
-        } else if (itemAtPosition.equalsIgnoreCase("Rissne")) {
+        if (itemAtPosition.equalsIgnoreCase("Rissne")) {
+            journeyDirection = 2;
             siteId = 9323;
         } else if (itemAtPosition.equalsIgnoreCase("Stadshagen")) {
+            // towards hjulsta
+            journeyDirection = 1;
             siteId = 9307;
-        } else if (itemAtPosition.equalsIgnoreCase("T-Centralen")) {
-            siteId = 9001;
-        } else if (itemAtPosition.equalsIgnoreCase("Kista")) {
-            siteId = 9302;
         } else {
             siteId = -1;
             return;
@@ -59,7 +54,6 @@ public class SpinnerEventListener implements AdapterView.OnItemSelectedListener 
             url = url.replace ("siteid=[0-9]{4}", "siteid=" + siteId);
             args.putString("url_key", url);
             mNetworkFragment.setArguments(args);
-
             mNetworkFragment.startDownload();
         } else {
             isInitialized.set(true);

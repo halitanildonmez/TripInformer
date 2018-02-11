@@ -5,10 +5,7 @@
     <string name="title_notifications">Notifications</string>
     <!-- SPINNER ITEM NAMES-->
     <string-array name="station_name_array">
-        <item>Kungsträdgården</item>
         <item>Rissne</item>
         <item>Stadshagen</item>
-        <item>T-Centralen</item>
-        <item>Kista</item>
     </string-array>
 </resources>

@@ -8,6 +8,7 @@ import android.os.CountDownTimer;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
@@ -31,16 +32,18 @@ import Server.NetworkFragment;
 
 public class MainActivity extends FragmentActivity implements DownloadCallback {
 
-    private TextView minLeftTextView, arrivalTimeTextView, toStationTextView;
+    private TextView minLeftTextView, arrivalTimeTextView, toStationTextView, mTextMessage,
+            currentDateTimeTextView, secondsTextField;
 
     private int minsLeft = -1;
-
-    private TextView mTextMessage;
     private boolean mDownloading = false;
+    // for debugging
+    private static final String TAG_NAME = "MYAPP";
+
     private NetworkFragment mNetworkFragment;
+    private SpinnerEventListener spinnerEventListener;
 
     private CountDownTimer timer;
-
     private List<SLData> metros;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -70,19 +73,26 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
 
         String firstPart = getString(R.string.call_first_part);
 
-        // default site is Kungstradgarden
+        // default site is Rissne
         firstPart += "&siteid=9323&timewindow=40&bus=false&ship=false&tram=false";
 
         mNetworkFragment = NetworkFragment.getInstance(getFragmentManager(), firstPart);
         mNetworkFragment.setMCallback(this);
 
-        SpinnerEventListener spinnerEventListener = new SpinnerEventListener(9340, mNetworkFragment);
+        spinnerEventListener = new SpinnerEventListener(9340, mNetworkFragment);
 
         startDownload();
 
         minLeftTextView = findViewById(R.id.minLeftText);
         arrivalTimeTextView = findViewById(R.id.arrivalTimeText);
         toStationTextView = findViewById(R.id.toStationText);
+
+        currentDateTimeTextView = findViewById(R.id.currentDateTimeText);
+        LocalDateTime curDateInstance = LocalDateTime.now().withNano(0);
+        currentDateTimeTextView.setText(curDateInstance.toLocalDate() + " " +
+                curDateInstance.toLocalTime());
+
+        secondsTextField = findViewById(R.id.secondTextField);
 
         Spinner stationNameSpinner = findViewById(R.id.stationSelectionSpinner);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
@@ -134,7 +144,9 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         if (metroJson != null) {
             for (int i = 0; i < metroJson.length(); i++) {
                 JSONObject o = (JSONObject) metroJson.get(i);
-                if (o.getInt("JourneyDirection") == 2) {
+                // hardcoded for blue line
+                if (o.getInt("LineNumber") == 10 &&
+                        spinnerEventListener.getJourneyDirection() == o.getInt("JourneyDirection")) {
                     String dateObject = o.getString (SLDataFieldNames.EXPECTED_DATE_TIME);
                     // add Z so that we can parse the string. Otherwise an exception will be thrown
                     // TODO: make this better somehow. Should check if the string is already in the
@@ -163,6 +175,7 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         LocalDateTime curDate = LocalDateTime.now();
 
         minsLeft = timeTabledDateTime.getMinute() - curDate.getMinute();
+        Log.d (TAG_NAME, "FROM THE CALL " + minsLeft);
         startCounter(minsLeft);
 
         arrivalTimeTextView.setText(timeTabledDateTime.toLocalDate().toString() + " " + timeTabledDateTime.toLocalTime().toString());
@@ -170,18 +183,31 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     }
 
     private void startCounter (int minsLeft) {
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+
         timer = new CountDownTimer(minsLeft*60*1000, 1000) {
 
             @Override public void onTick(long l) {
                 String cs = "" + l / (60*1000);
                 minLeftTextView.setText(cs);
+                LocalDateTime nowTime = LocalDateTime.now().withNano(0);
+                currentDateTimeTextView.setText(nowTime.toLocalDate().toString() + " " +
+                        nowTime.toLocalTime().toString());
+                int seconds = (int)(l / 1000) % 60;
+                if (seconds < 10)
+                    secondsTextField.setText("0" + seconds);
+                else
+                    secondsTextField.setText("" + seconds);
             }
 
             @Override public void onFinish() {
                 // TODO: restart the download
+                Log.d(TAG_NAME, "Ended");
             }
         };
-
         timer.start();
     }
 
@@ -218,7 +244,9 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         minLeftTextView.setText("");
         arrivalTimeTextView.setText("");
         toStationTextView.setText("");
+        secondsTextField.setText("");
         metros.clear();
         timer.cancel();
+        timer = null;
     }
 }
