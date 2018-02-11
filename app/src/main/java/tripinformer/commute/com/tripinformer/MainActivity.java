@@ -32,10 +32,8 @@ import Server.NetworkFragment;
 
 public class MainActivity extends FragmentActivity implements DownloadCallback {
 
-    private TextView minLeftTextView, arrivalTimeTextView, toStationTextView, mTextMessage,
-            currentDateTimeTextView, secondsTextField;
+    private TextView minLeftTextView, arrivalTimeTextView, toStationTextView, currentDateTimeTextView, secondsTextField;
 
-    private int minsLeft = -1;
     private boolean mDownloading = false;
     // for debugging
     private static final String TAG_NAME = "MYAPP";
@@ -45,26 +43,6 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
 
     private CountDownTimer timer;
     private List<SLData> metros;
-
-    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            switch (item.getItemId()) {
-                case R.id.navigation_home:
-                    mTextMessage.setText(R.string.title_home);
-                    return true;
-                case R.id.navigation_dashboard:
-                    mTextMessage.setText(R.string.title_dashboard);
-                    return true;
-                case R.id.navigation_notifications:
-                    mTextMessage.setText(R.string.title_notifications);
-                    return true;
-            }
-            return false;
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,8 +67,9 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
 
         currentDateTimeTextView = findViewById(R.id.currentDateTimeText);
         LocalDateTime curDateInstance = LocalDateTime.now().withNano(0);
-        currentDateTimeTextView.setText(curDateInstance.toLocalDate() + " " +
-                curDateInstance.toLocalTime());
+        String currentDateTimeText = curDateInstance.toLocalDate() + " " +
+                curDateInstance.toLocalTime();
+        currentDateTimeTextView.setText(currentDateTimeText);
 
         secondsTextField = findViewById(R.id.secondTextField);
 
@@ -174,11 +153,13 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
         LocalDateTime timeTabledDateTime = data.getTimeTabledDateTime();
         LocalDateTime curDate = LocalDateTime.now();
 
-        minsLeft = timeTabledDateTime.getMinute() - curDate.getMinute();
+        int minsLeft = timeTabledDateTime.getMinute() - curDate.getMinute();
         Log.d (TAG_NAME, "FROM THE CALL " + minsLeft);
         startCounter(minsLeft);
 
-        arrivalTimeTextView.setText(timeTabledDateTime.toLocalDate().toString() + " " + timeTabledDateTime.toLocalTime().toString());
+        String arrivalTimeText = timeTabledDateTime.toLocalDate().toString() + " " +
+                timeTabledDateTime.toLocalTime().toString();
+        arrivalTimeTextView.setText(arrivalTimeText);
         toStationTextView.setText(data.getDestination());
     }
 
@@ -194,13 +175,16 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
                 String cs = "" + l / (60*1000);
                 minLeftTextView.setText(cs);
                 LocalDateTime nowTime = LocalDateTime.now().withNano(0);
-                currentDateTimeTextView.setText(nowTime.toLocalDate().toString() + " " +
-                        nowTime.toLocalTime().toString());
+                String updatedCurrentDateTime = nowTime.toLocalDate().toString() + " " +
+                        nowTime.toLocalTime().toString();
+                currentDateTimeTextView.setText(updatedCurrentDateTime);
                 int seconds = (int)(l / 1000) % 60;
+                String seconsTextFieldValue;
                 if (seconds < 10)
-                    secondsTextField.setText("0" + seconds);
+                    seconsTextFieldValue = "0" + seconds;
                 else
-                    secondsTextField.setText("" + seconds);
+                    seconsTextFieldValue = "" + seconds;
+                secondsTextField.setText(seconsTextFieldValue);
             }
 
             @Override public void onFinish() {
@@ -214,8 +198,13 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
     @Override
     public NetworkInfo getActiveNetworkInfo() {
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connManager.getActiveNetworkInfo();
-        return networkInfo;
+        try {
+            return connManager.getActiveNetworkInfo();
+        } catch (Exception e) {
+            Log.d(TAG_NAME, e.getLocalizedMessage());
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
