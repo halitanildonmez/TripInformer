@@ -52,8 +52,7 @@ public class SpinnerEventListener implements AdapterView.OnItemSelectedListener 
             Bundle args = mNetworkFragment.getArguments();
             String url = args.getString ("url_key");
             url = url.replace ("siteid=[0-9]{4}", "siteid=" + siteId);
-            args.putString("url_key", url);
-            mNetworkFragment.setArguments(args);
+            mNetworkFragment.getArguments().putString("url_key", url);
             mNetworkFragment.startDownload();
         } else {
             isInitialized.set(true);

@@ -19,11 +19,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import Model.SLData;
 import Model.SLDataFieldNames;
@@ -61,14 +66,15 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
 
         startDownload();
 
-        minLeftTextView = findViewById(R.id.minLeftText);
-        arrivalTimeTextView = findViewById(R.id.arrivalTimeText);
-        toStationTextView = findViewById(R.id.toStationText);
+        minLeftTextView = (TextView) findViewById(R.id.minLeftText);
+        arrivalTimeTextView = (TextView) findViewById(R.id.arrivalTimeText);
+        toStationTextView = (TextView) findViewById(R.id.toStationText);
 
-        currentDateTimeTextView = findViewById(R.id.currentDateTimeText);
-        LocalDateTime curDateInstance = LocalDateTime.now().withNano(0);
-        String currentDateTimeText = curDateInstance.toLocalDate() + " " +
-                curDateInstance.toLocalTime();
+        currentDateTimeTextView = (TextView) findViewById(R.id.currentDateTimeText);
+        Timestamp currentDateTimestamp = new Timestamp(System.currentTimeMillis());
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH.mm.ss");
+
+        String currentDateTimeText = sdf.format(currentDateTimestamp);
         currentDateTimeTextView.setText(currentDateTimeText);
 
         secondsTextField = findViewById(R.id.secondTextField);
@@ -131,11 +137,18 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
                     // TODO: make this better somehow. Should check if the string is already in the
                     // TODO: good form
                     dateObject += "Z";
-                    LocalDateTime localDateTime =
-                            LocalDateTime.ofInstant(Instant.parse(dateObject), ZoneId.systemDefault());
+
+                    SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    dateObject = dateObject.replace("T", " ");
+                    Date res = null;
+                    try {
+                        res = fmt.parse(dateObject);
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
 
                     SLData data = new SLData(o.getString (SLDataFieldNames.DISPLAY_TIME),
-                            o.getString (SLDataFieldNames.DESTINATION), localDateTime);
+                            o.getString (SLDataFieldNames.DESTINATION), res);
                     objects.add(data);
                 }
             }
@@ -150,35 +163,40 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
      * @param data the data to use and update the labels with
      */
     private void updateActivityLabels (SLData data) {
-        LocalDateTime timeTabledDateTime = data.getTimeTabledDateTime();
-        LocalDateTime curDate = LocalDateTime.now();
 
-        int minsLeft = timeTabledDateTime.getMinute() - curDate.getMinute();
-        Log.d (TAG_NAME, "FROM THE CALL " + minsLeft);
-        startCounter(minsLeft);
+        Timestamp timeTabledDateTime = new Timestamp (data.getTimeTabledDateTime().getTime());
+        Timestamp curDate = new Timestamp(System.currentTimeMillis());
 
-        String arrivalTimeText = timeTabledDateTime.toLocalDate().toString() + " " +
-                timeTabledDateTime.toLocalTime().toString();
+        long diff = timeTabledDateTime.getTime() - curDate.getTime();
+        int minutes = (int) ((diff / (1000*60)) % 60);
+        int seconds = (int) (diff / 1000) % 60 ;
+
+        long millis = seconds*1000 + (minutes*60*1000);
+
+        startCounter(millis);
+
+        String arrivalTimeText = timeTabledDateTime.toString();
         arrivalTimeTextView.setText(arrivalTimeText);
         toStationTextView.setText(data.getDestination());
     }
 
-    private void startCounter (int minsLeft) {
+    private void startCounter (long minsLeft) {
         if (timer != null) {
             timer.cancel();
             timer = null;
         }
 
-        timer = new CountDownTimer(minsLeft*60*1000, 1000) {
+        timer = new CountDownTimer(minsLeft, 1000) {
 
             @Override public void onTick(long l) {
                 String cs = "" + l / (60*1000);
                 minLeftTextView.setText(cs);
-                LocalDateTime nowTime = LocalDateTime.now().withNano(0);
-                String updatedCurrentDateTime = nowTime.toLocalDate().toString() + " " +
-                        nowTime.toLocalTime().toString();
+
+                Timestamp curDate = new Timestamp(System.currentTimeMillis());
+                String updatedCurrentDateTime = curDate.toString();
                 currentDateTimeTextView.setText(updatedCurrentDateTime);
-                int seconds = (int)(l / 1000) % 60;
+
+                int seconds = (int) (l / 1000) % 60;
                 String seconsTextFieldValue;
                 if (seconds < 10)
                     seconsTextFieldValue = "0" + seconds;

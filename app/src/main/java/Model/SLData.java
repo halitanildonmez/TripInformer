@@ -2,6 +2,7 @@ package Model;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * Created by anildonmez on 7.2.2018.
@@ -10,9 +11,9 @@ import java.time.LocalDateTime;
 public class SLData {
     private String displayData;
     private String destination;
-    private LocalDateTime timeTabledDateTime;
+    private Date timeTabledDateTime;
 
-    public SLData(String displayData, String destination, LocalDateTime timeTabledDateTime) {
+    public SLData(String displayData, String destination, Date timeTabledDateTime) {
         this.displayData = displayData;
         this.destination = destination;
         this.timeTabledDateTime = timeTabledDateTime;
@@ -34,11 +35,11 @@ public class SLData {
         this.destination = destination;
     }
 
-    public LocalDateTime getTimeTabledDateTime() {
+    public Date getTimeTabledDateTime() {
         return timeTabledDateTime;
     }
 
-    public void setTimeTabledDateTime(LocalDateTime timeTabledDateTime) {
+    public void setTimeTabledDateTime(Date timeTabledDateTime) {
         this.timeTabledDateTime = timeTabledDateTime;
     }
 }
