@@ -106,7 +106,7 @@ public class MainActivity extends FragmentActivity implements DownloadCallback {
             e.printStackTrace();
         }
 
-        if (metros.size() > 0) {
+        if (metros != null && metros.size() > 0) {
             updateActivityLabels(metros.get(0));
         }
     }
